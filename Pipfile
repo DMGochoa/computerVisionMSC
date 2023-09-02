@@ -7,10 +7,9 @@ name = "pypi"
 matplotlib = "*"
 numpy = "*"
 pytest = "*"
-pyyaml = "*"
-lark = "*"
+sympy = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.10"
+python_version = "*"
