@@ -1,3 +1,10 @@
+"""This module implements the PointGP2 class to represent a point in the projective plane P2.
+
+Diego A Moreno G
+Msc Student in Elctrical Engineering
+Universidad Tecnológica de Pereira
+20/08/2023
+"""
 import sys
 sys.path.append("./")
 import matplotlib.pyplot as plt
@@ -8,9 +15,14 @@ class PointGP2(GeometryP2):
     
     def __init__(self, array, nombre):
         super().__init__(array, nombre)
+        if self.array[-1] != 1:
+            self.vector = self.array / self.array[-1]
+        else:
+            self.vector = self.array
 
-    def _productoVectorial(self, array):
-        return np.cross(self.vector.T, array).tolist()
+    def _crossProduct(self, array):
+        resultingVector = np.cross(self.vector.T, array)
+        return resultingVector.tolist()
 
     def plot(self):
         plt.scatter(self.vector[0],
@@ -25,5 +37,5 @@ class PointGP2(GeometryP2):
 
     def calcularLinea(self, punto, nombre):
         from geometry.lineGP2 import LineGP2  # Importación local
-        return LineGP2(self._productoVectorial(punto.vector), nombre)
+        return LineGP2(self._crossProduct(punto.vector), nombre)
 
