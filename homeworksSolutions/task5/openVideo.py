@@ -7,7 +7,7 @@ and exit the video playback.
 Diego A Moreno G
 Msc Student in Electrical Engineering
 Universidad Tecnológica de Pereira
-20/08/2023
+17/09/2023
 """
 
 import cv2

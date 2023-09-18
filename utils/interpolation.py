@@ -1,8 +1,59 @@
+import sys
+sys.path.append("./")
 import numpy as np
 import math
 
 
 class Interpolation:
+
+    @staticmethod
+    def get_pixel_value(img, x, y, method='bilinear'):
+        """
+        Get the pixel value using a specific interpolation method.
+        """
+        if method == 'nearest_neighbor':
+            return img[min(int(round(y)), img.shape[0]-1), min(int(round(x)), img.shape[1]-1)]
+        
+        elif method == 'bilinear':
+            x_floor, y_floor = int(x), int(y)
+            dx, dy = x - x_floor, y - y_floor
+            
+            if x_floor + 1 < img.shape[1] and y_floor + 1 < img.shape[0]:
+                top_left = img[y_floor, x_floor]
+                top_right = img[y_floor, x_floor + 1]
+                bottom_left = img[y_floor + 1, x_floor]
+                bottom_right = img[y_floor + 1, x_floor + 1]
+
+                interpolated = (1 - dx) * (1 - dy) * top_left + dx * (1 - dy) * top_right + (1 - dx) * dy * bottom_left + dx * dy * bottom_right
+                return interpolated.astype(np.uint8)
+            else:
+                return img[y_floor, x_floor]
+
+        elif method == 'bicubic':
+            def bicubic_kernel(x):
+                x = abs(x)
+                if x <= 1:
+                    return 1 - 2*x**2 + x**3
+                elif x < 2:
+                    return 4 - 8*x + 5*x**2 - x**3
+                else:
+                    return 0
+            
+            x_floor, y_floor = int(x), int(y)
+            dx, dy = x - x_floor, y - y_floor
+            
+            interpolated = np.zeros(3)
+
+            for m in range(-1, 3):
+                for n in range(-1, 3):
+                    if 0 <= x_floor + m < img.shape[1] and 0 <= y_floor + n < img.shape[0]:
+                        weight = bicubic_kernel(m - dx) * bicubic_kernel(n - dy)
+                        interpolated += weight * img[y_floor + n, x_floor + m]
+            
+            return np.clip(interpolated, 0, 255).astype(np.uint8)
+
+        else:
+            raise ValueError(f"Interpolation method {method} not recognized.")
 
     @staticmethod
     def nearest_neighbor(img, dstH, dstW):
