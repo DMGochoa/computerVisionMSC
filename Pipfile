@@ -8,6 +8,7 @@ matplotlib = "*"
 numpy = "*"
 pytest = "*"
 sympy = "*"
+opencv-python = "*"
 
 [dev-packages]
 

@@ -59,43 +59,103 @@ class HomographyEstimation:
                         self.image, x_src, y_src, interp_method)
 
         return dst_section
+    
+    def get_transformed_corners(self, H):
+        # Esquinas de la imagen original
+        corners = np.array([
+            [0, 0, 1],
+            [self.Q-1, 0, 1],
+            [self.Q-1, self.P-1, 1],
+            [0, self.P-1, 1]
+        ])
 
-    def apply_homography_manual(self, H, width, height, interp_method='bilinear', use_multithreading=False, thread_percentage=1):
+        # Transformando las esquinas
+        transformed_corners = []
+        for corner in corners:
+            new_corner = H @ corner
+            new_corner /= new_corner[2]  # Normalizar
+            transformed_corners.append(new_corner[:2])
+
+        transformed_corners = np.array(transformed_corners)
+        
+        # Min and Max X, Y values
+        min_x = int(np.floor(transformed_corners[:, 0].min()))
+        max_x = int(np.ceil(transformed_corners[:, 0].max()))
+        min_y = int(np.floor(transformed_corners[:, 1].min()))
+        max_y = int(np.ceil(transformed_corners[:, 1].max()))
+        
+        return min_x, max_x, min_y, max_y
+
+
+    def _split_image_sections(self, width, height, num_sections):
+        """
+        Split the image into horizontal strips.
+        """
+        section_height = height // num_sections
+        sections = []
+
+        for i in range(num_sections):
+            top = i * section_height
+            bottom = (i+1) * section_height if i != num_sections - 1 else height
+            sections.append((top, bottom, 0, width))
+
+        return sections
+
+    def _recursive_split(self, section, min_height):
+        """
+        Recursively split the image section into horizontal strips.
+        """
+        top, bottom, left, right = section
+        if (bottom - top) <= min_height:
+            return [section]
+
+        middle = (top + bottom) // 2
+        top_section = (top, middle, left, right)
+        bottom_section = (middle, bottom, left, right)
+
+        return self._recursive_split(top_section, min_height) + self._recursive_split(bottom_section, min_height)
+
+    def apply_homography_manual(self, H, width, height, interp_method='bilinear', use_multithreading=False, thread_percentage=1, min_height=50):
+        # If not using multithreading, apply homography on the entire image
         if not use_multithreading:
             return self._apply_homography_section((0, height, 0, width), H, interp_method)
-
         else:
             max_threads = int(thread_percentage * os.cpu_count())
-            sections = self._split_image_sections(width, height, max_threads)
+            initial_sections = self._split_image_sections(width, height, max_threads)
+
+            # Use recursive splitting to get the final sections
+            sections = []
+            for section in initial_sections:
+                sections.extend(self._recursive_split(section, min_height))
+
             dst = np.zeros((height, width, 3), dtype=np.uint8)
+            inv_H = np.linalg.inv(H)
+            min_x, max_x, min_y, max_y = self.get_transformed_corners(H)
+
+            def map_section_to_original(section):
+                top, bottom, left, right = section
+                dst_section = np.zeros((bottom-top, right-left, 3), dtype=np.uint8)
+
+                for x in range(max(left, min_x), min(right, max_x+1)):
+                    for y in range(max(top, min_y), min(bottom, max_y+1)):
+                        src = inv_H @ np.array([x, y, 1])
+                        src = src / src[2]
+                        x_src, y_src = src[0], src[1]
+                        if 0 <= x_src < self.Q and 0 <= y_src < self.P:
+                            dst_section[y-top, x-left] = Interpolation.get_pixel_value(
+                                self.image, x_src, y_src, interp_method)
+
+                return dst_section
 
             with ThreadPoolExecutor(max_threads) as executor:
                 future_to_section = {executor.submit(
-                    self._apply_homography_section, section, H, interp_method): section for section in sections}
+                    map_section_to_original, section): section for section in sections}
                 for future in concurrent.futures.as_completed(future_to_section):
                     section = future_to_section[future]
                     top, bottom, left, right = section
                     dst[top:bottom, left:right] = future.result()
 
             return dst
-
-    def _split_image_sections(self, width, height, num_sections):
-        sqrt_sections = int(np.sqrt(num_sections))
-        section_width = width // sqrt_sections
-        section_height = height // sqrt_sections
-
-        sections = []
-        for i in range(sqrt_sections):
-            for j in range(sqrt_sections):
-                top = i * section_height
-                bottom = (i+1) * \
-                    section_height if i != sqrt_sections - 1 else height
-                left = j * section_width
-                right = (j+1) * section_width if j != sqrt_sections - \
-                    1 else width
-                sections.append((top, bottom, left, right))
-
-        return sections
 
     def select_correspondence_points(self):
         """
@@ -141,27 +201,17 @@ class HomographyEstimation:
         # Apply the computed homography with specified interpolation method and multithreading options
         return self.apply_homography_manual(H, self.Q, self.P, interp_method, use_multithreading, thread_percentage)
 
-import time
-# Get the current directory path
-dir_actual = os.path.dirname(os.path.abspath(__file__))
-# Join the current directory path with your image's relative path
-image_path = os.path.join(dir_actual, '..', 'task5', 'examples', 'cuadro.jpg')
-
-homography = HomographyEstimation(image_path)
-original_pts, black_image_pts = homography.select_correspondence_points()
-
-
-# Sin multihilos
-start_time = time.time()
-transformed_image_no_threads = homography.apply_selected_homography(original_pts, black_image_pts, interp_method='bilinear', use_multithreading=False)
-end_time = time.time()
-print(f"Sin multihilos: {end_time - start_time:.4f} segundos")
-
-# Con multihilos
-start_time = time.time()
-transformed_image_threads = homography.apply_selected_homography(original_pts, black_image_pts, interp_method='bilinear', use_multithreading=True, thread_percentage=0.5)
-end_time = time.time()
-print(f"Con multihilos (50% de hilos disponibles): {end_time - start_time:.4f} segundos")
-
-plt.imshow(cv2.cvtColor(transformed_image_threads, cv2.COLOR_BGR2RGB))
-plt.show()
+    def apply_homography_opencv(self, original_pts, black_image_pts):
+        """
+        Compute and apply the homography using OpenCV.
+        """
+        src_pts = np.array(original_pts, dtype=np.float32)
+        dst_pts = np.array(black_image_pts, dtype=np.float32)
+        
+        # Compute the homography matrix using OpenCV
+        H, _ = cv2.findHomography(src_pts, dst_pts)
+        
+        # Warp the source image
+        transformed_image = cv2.warpPerspective(self.image, H, (self.Q, self.P))
+        
+        return transformed_image
