@@ -17,7 +17,7 @@ print(image.shape)
 plt.imshow(image)
 plt.title("Original Image")
 
-tamano = 1200
+tamano = 800
 tamano2 = 612
 
 # Usar interpolación bilineal
