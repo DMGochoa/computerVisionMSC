@@ -100,7 +100,10 @@ class LineGP3(GeometryP2):
         """
         _, _, V = np.linalg.svd(A)
         V = V.T
-        result = np.array([V[:, -1]])/V[-1, -1]
+        if V[-1, -1] == 0:
+            result = np.array([V[:, -1]])
+        else:
+            result = np.array([V[:, -1]])/V[-1, -1]
         return result.round(round)[0]
 
     def intersectionPlane(self, plane):
@@ -113,7 +116,8 @@ class LineGP3(GeometryP2):
         Returns:
             numpy.ndarray: The intersection point.
         """
-        return self.__dataFitting(np.concatenate((self.W, plane.mayusPi.reshape(1,4)), axis=0))
+        value = np.concatenate((self.Wdual, plane.mayusPi.reshape(1,4)), axis=0)
+        return self.__dataFitting(value)
         
 
     def plot(self, ax, x_lim=[-10, 10], y_lim=[-10, 10], z_lim=[-10, 10]):
@@ -142,13 +146,17 @@ class LineGP3(GeometryP2):
             intersections = []
             # Planes X
             for x in x_lim:
-                planeX = PlaneGP3(points=[[x, 0, 0, 1], [x, 1, 0, 1], [x, 0, 1, 1]], name='X')
+                planeX = PlaneGP3(points=[[x, 0, 0, 1],
+                                          [x, 1, 0, 1],
+                                          [x, 0, 1, 1]], name='X')
                 intersection = self.intersectionPlane(planeX)
                 if intersection is not None:
                     intersections.append(intersection)
             # Planes Y
             for y in y_lim:
-                planeY = PlaneGP3(points=[[0, y, 0, 1], [1, y, 0, 1], [0, y, 1, 1]], name='Y')
+                planeY = PlaneGP3(points=[[0, y, 0, 1],
+                                          [1, y, 0, 1],
+                                          [0, y, 1, 1]], name='Y')
                 intersection = self.intersectionPlane(planeY)
                 if intersection is not None:
                     intersections.append(intersection)
@@ -172,7 +180,6 @@ class LineGP3(GeometryP2):
         # Use the first and last points in the sorted list as the endpoints for plotting
         start_point = valid_intersections[0]
         end_point = valid_intersections[-1]
-
         # Plot the line from start_point to end_point
         ax.plot([start_point[0], end_point[0]],
                 [start_point[1], end_point[1]],
@@ -180,13 +187,15 @@ class LineGP3(GeometryP2):
 
 
 if __name__ == '__main__':
-    
+    from geometry.pointGP3 import PointGP3
+    pointA = PointGP3([1, 0, 0, 1], 'A')
+    pointB = PointGP3([2, 0, 0, 1], 'B')
     lineL = LineGP3([[1, 0, 0, 1], [2, 0, 0, 1]], 'L')
     lineM = LineGP3([[-2, -1, 1, 1], [3, 3, 0, 1]], 'M')
-    print(lineL.estimateCoplanar(lineM))
-    print(np.linalg.det(np.concatenate((lineL.W.T, lineM.W.T), axis=1)))
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+    pointA.plot(ax)
+    pointB.plot(ax)
     lineL.plot(ax)
     lineM.plot(ax)
     plt.show()

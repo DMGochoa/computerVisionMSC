@@ -19,20 +19,50 @@ class PointGP3(GeometryP2):
         element_name (str): The name of the point.
     """
 
-    def __init__(self, array, name):
+    def __init__(self, array=[], name='', planes=None):
         """Initializes the PointGP3 object with homogeneous coordinates and a name.
 
         Args:
             array (list or np.array): List or array of four elements that represent the point in the projective space P3.
                                       Should be in homogeneous coordinates [x, y, z, 1].
             name (str): Name of the point.
+            planes (list of PlaneGP3 or list od lists, optional): List of three planes that define the point. Defaults to None.
         """
-        super().__init__(array, name)
-        self.__verifyHomogeneousCoordinates(array)
-        if self.array[-1] != 1:
-            self.vector = self.array / self.array[-1]
+        if planes is None:
+            super().__init__(array, name)
+            self.__verifyHomogeneousCoordinates(array)
         else:
-            self.vector = self.array
+            if type(planes[0]) is not list:
+               A = np.array([planes[0].mayusPi,
+                             planes[1].mayusPi,
+                             planes[2].mayusPi])
+            else:
+                A = np.array(planes) 
+                estimate = self.__dataFitting(A).tolist()
+                super().__init__(estimate, name)
+
+        self.vector = self.__homogeneousCoordinates(self.array)
+
+
+    def __homogeneousCoordinates(self, array):
+        """Returns the homogeneous coordinates of the point."""
+        return array / array[-1]
+
+    def __dataFitting(self, A, round=3):
+        """
+        Performs Singular Value Decomposition (SVD) to fit the conic to the given points.
+
+        Args:
+            A (numpy.ndarray): The A matrix constructed from the points.
+            round (int, optional): The number of decimal places to round the fitted parameters to. Defaults to 3.
+
+        Returns:
+            numpy.ndarray: The fitted parameters.
+        """
+        _, _, V = np.linalg.svd(A)
+        V = V.T
+        result = np.array([V[:, -1]])/V[-1, -1]
+        return result.round(round)[0]
 
     def __verifyHomogeneousCoordinates(self, array):
         """Checks if the array has homogeneous coordinates."""
@@ -67,3 +97,6 @@ if __name__ == '__main__':
     point2.plot(ax)
     point3.plot(ax)
     plt.show()
+    
+    P1 = PointGP3(name='P1', planes=[[1, 0, 0, 0], [-1, 1, 0, 0], [0, 0, 1, 0]])
+    print(P1.vector)

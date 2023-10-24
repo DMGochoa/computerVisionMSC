@@ -60,7 +60,6 @@ class ConicalGP2(GeometryP2):
         else:
             self.__verifyMinPoint(puntos)
             A_matrix, mu, sigma = self.__normAMatrix(puntos)
-            print(A_matrix)
             normParameters = self.__dataFitting(A_matrix, round)
             self.A, self.B, self.C, self.D, self.E, self.F = self.__denormalizeParam(
                 normParameters, mu, sigma)
@@ -291,5 +290,4 @@ class ConicalGP2(GeometryP2):
         _, _, V = np.linalg.svd(A)
         V = V.T
         result = np.array([V[:, -1]])/V[-1, -1]
-        print(result[0])
         return result.round(round)[0]

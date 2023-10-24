@@ -9,6 +9,7 @@ numpy = "*"
 pytest = "*"
 sympy = "*"
 opencv-python = "*"
+scikit-learn = "*"
 
 [dev-packages]
 
