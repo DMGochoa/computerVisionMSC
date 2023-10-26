@@ -78,9 +78,12 @@ class QuadricGP3:
 if __name__ == '__main__':
     # Ejemplo de uso:
     # Representa x^2 + y^2 + z^2 + w^2 = 0
-    quadric = QuadricGP3(coeffs=[1, 1, 1, -16, 0, 0, 0, 0, 0, 0])
+    quadric = QuadricGP3(coeffs=[1/100, 1/16, 1/25, -1, 0, 0, 0, 0, 0, 0])
     print(quadric.quadric)
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     quadric.plot(ax, xlim=(-10, 10), ylim=(-10, 10))
+    ax.set_xlim([-10, 10])
+    ax.set_ylim([-5, 5])
+    ax.set_ylim([-5, 5])
     plt.show()

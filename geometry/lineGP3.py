@@ -66,13 +66,10 @@ class LineGP3(GeometryP2):
         Returns:
             float: A scalar representing the coplanarity. A value close to zero indicates coplanarity.
         """
-        coplanar = self.Lmatrix[0,1] * line.Lmatrix[0, 2] + \
-        line.Lmatrix[0,1] * self.Lmatrix[2, 3] + \
-        self.Lmatrix[0,2] * line.Lmatrix[3, 1] + \
-        line.Lmatrix[0,2] * self.Lmatrix[3, 1] + \
-        self.Lmatrix[0,3] * line.Lmatrix[1, 2] + \
-        line.Lmatrix[0,3] * self.Lmatrix[1, 2]
-        return coplanar
+        pointsMatrix = np.concatenate((self.W,
+                                  line.W), axis=0)
+        coplanar = np.linalg.det(pointsMatrix.T)
+        return abs(coplanar) < 1e-10
 
     def __verifyHomogeneousCoordinates(self, array):
         """

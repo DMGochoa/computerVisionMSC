@@ -93,6 +93,7 @@ plt.show()
 
 pointA = PointGP3([-2, -2, 0, 1], 'A')
 pointB = PointGP3([7, 5, 3, 1], 'B')
+pointBpri = PointGP3([7, 5, 0, 1], "B'")
 pointC = PointGP3([8, 1, 1, 1], 'C')
 
 lineAB = LineGP3(points=[pointA.vector,
@@ -101,20 +102,66 @@ lineAB = LineGP3(points=[pointA.vector,
 lineBC = LineGP3(points=[pointB.vector,
                         pointC.vector], name='BC')
 
+lineBCpri = LineGP3(points=[pointC.vector,
+                           pointBpri.vector], name="B'C")
+
 print('Line AB is coplanar to BC?',lineAB.estimateCoplanar(lineBC))
+print("Line AB is coplanar to B'C?",lineAB.estimateCoplanar(lineBCpri))
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 pointA.plot(ax)
 pointB.plot(ax)
 pointC.plot(ax)
+pointBpri.plot(ax)
 
 lineAB.plot(ax)
 lineBC.plot(ax)
+lineBCpri.plot(ax)
 
 plt.grid()
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 plt.tight_layout()
+plt.show()
+
+# ¿Dada una linea L y un plano Pi, cómo determinar si la linea L pertenece al plano Pi?
+pointA = PointGP3([-2, -2, 0, 1], 'A')
+pointB = PointGP3([7, 5, 3, 1], 'B')
+pointC = PointGP3([8, 1, 1, 1], 'C')
+
+lineAB = LineGP3(points=[pointA.vector,
+                        pointB.vector], name='AB')
+
+planeABC = PlaneGP3(points=[pointA.vector,
+                            pointB.vector,
+                            pointC.vector], name='ABC')
+
+print(planeABC.lineInPlane(lineAB))
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+lineAB.plot(ax)
+planeABC.plot(ax)
+plt.grid()
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+plt.tight_layout()
+plt.show()
+
+# ¿Cuál es la cónica C que resulta de intersectar un plano Pi con un elipsoide?
+quadric = QuadricGP3(coeffs=[1/100, 1/16, 1/25, -1, 0, 0, 0, 0, 0, 0])
+
+planePi = PlaneGP3(coefficients=[3, 1, 1, -10], name='Pi')
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+quadric.plot(ax, xlim=(-10, 10), ylim=(-10, 10))
+planePi.plot(ax, x_range=(-10, 10), y_range=(-5, 5))
+planePi.plotIntersectionPlaneQuadric(ax, quadric, resolution=100)
+ax.set_xlim([-10, 10])
+ax.set_ylim([-5, 5])
+ax.set_zlim([-5, 5])
 plt.show()

@@ -44,3 +44,8 @@ task6:
 	@echo "Running task 6"
 	pipenv run python ./homeworkSolutions/task6/homographyTask.py
 	@echo "####DONE####"
+task7:
+	@echo "####TASK 7####"
+	@echo "Running task 7"
+	pipenv run python ./homeworkSolutions/task7/P3solutions.py
+	@echo "####DONE####"	
